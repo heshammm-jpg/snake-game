@@ -1,3 +1,9 @@
+activatePowerUp() {
+    const powerUps = ['shield', 'speed', 'yourNewPower'];
+    // Add logic for new power-up
+}
+this.gridSize = 20;  // Pixel size of each tile
+this.tileCount = this.canvas.width / this.gridSize;
 class SnakeGame {
     constructor(mode) {
         this.mode = mode;
