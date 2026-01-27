@@ -1,3 +1,9 @@
+// Global init function
+function initGame(mode) {
+    window.game = new SnakeGame(mode);
+    console.log('Game created in mode:', mode);
+}
+console.log('snake.js is running');
 activatePowerUp() {
     const powerUps = ['shield', 'speed', 'yourNewPower'];
     // Add logic for new power-up
