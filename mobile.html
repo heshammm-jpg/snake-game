@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake Game - Mobile Edition</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body class="mobile-theme">
+    <div class="mobile-container">
+        <div class="mobile-header">
+            <h1 class="neon-text-mobile">SNAKE</h1>
+            <div class="mobile-stats">
+                <div class="m-stat">
+                    <span id="score">0</span>
+                    <small>Score</small>
+                </div>
+                <div class="m-stat">
+                    <span id="highScore">0</span>
+                    <small>Best</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="mobile-game-area">
+            <canvas id="gameCanvas" width="350" height="350"></canvas>
+            
+            <div id="gameOverlay" class="overlay active">
+                <div class="mobile-menu">
+                    <h2>SNAKE</h2>
+                    <p>Swipe to move or use buttons</p>
+                    <button id="startBtn" class="btn-mobile">PLAY</button>
+                    <div class="mobile-difficulty">
+                        <button class="diff-btn" data-speed="150">E</button>
+                        <button class="diff-btn active" data-speed="100">N</button>
+                        <button class="diff-btn" data-speed="70">H</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mobile-controls">
+            <button class="mobile-btn up" data-dir="up">▲</button>
+            <div class="mobile-middle">
+                <button class="mobile-btn left" data-dir="left">◀</button>
+                <button class="mobile-btn action" id="pauseBtn">⏸</button>
+                <button class="mobile-btn right" data-dir="right">▶</button>
+            </div>
+            <button class="mobile-btn down" data-dir="down">▼</button>
+        </div>
+
+        <div class="mobile-footer">
+            <div class="swipe-hint">Swipe anywhere to control</div>
+            <div class="power-indicator" id="powerUpIndicator"></div>
+        </div>
+    </div>
+
+    <script src="snake.js"></script>
+    <script>
+        // Mobile-specific initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            initGame('mobile');
+        });
+    </script>
+</body>
+</html>
