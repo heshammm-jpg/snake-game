@@ -1,4 +1,9 @@
 :root {
+    --primary: #00ff88;    /* Snake color */
+    --secondary: #00ccff;  /* UI accents */
+    --accent: #ff00ff;     /* Bonus items */
+}
+:root {
     --primary: #00ff88;
     --secondary: #00ccff;
     --accent: #ff00ff;
