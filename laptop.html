@@ -1,4 +1,21 @@
-    <script src="snake.js"></script>
+    <script>
+        console.log('Loading scripts...');
+    </script>
+    <script src="snake.js" onload="console.log('snake.js loaded')" onerror="console.error('snake.js FAILED to load')"></script>
+    <script src="sounds.js" onload="console.log('sounds.js loaded')" onerror="console.error('sounds.js FAILED to load')"></script>
+    <script src="assistant.js" onload="console.log('assistant.js loaded')" onerror="console.error('assistant.js FAILED to load')"></script>
+    <script>
+        console.log('Attempting to init game...');
+        if (typeof initGame === 'function') {
+            initGame('laptop');
+            console.log('Game initialized!');
+        } else {
+            console.error('ERROR: initGame function not found!');
+        }
+    </script>
+</body>
+</html>
+<script src="snake.js"></script>
     <script src="sounds.js"></script>
     <script src="assistant.js"></script>
     <script>
