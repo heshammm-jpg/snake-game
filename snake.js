@@ -1,3 +1,15 @@
+// Add to game over to record stats - FIXED VERSION
+window.addEventListener('load', () => {
+    if (typeof SnakeGame !== 'undefined') {
+        const originalGameOver = SnakeGame.prototype.gameOver;
+        SnakeGame.prototype.gameOver = function() {
+            if (window.SnakeAssistant) {
+                SnakeAssistant.recordGame(this.score);
+            }
+            originalGameOver.call(this);
+        };
+    }
+});
 console.log('snake.js loading...');
 
 class SnakeGame {
