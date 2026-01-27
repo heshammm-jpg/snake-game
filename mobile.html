@@ -1,4 +1,19 @@
-    <!-- Add these two lines before closing </body> -->
+    <script src="snake.js"></script>
+    <script src="sounds.js"></script>
+    <script src="assistant.js"></script>
+    <script>
+        // Initialize when everything loads
+        window.addEventListener('DOMContentLoaded', () => {
+            if (typeof initGame === 'function') {
+                initGame('laptop'); // or 'mobile' for mobile.html
+            } else {
+                console.error('Game not loaded properly!');
+            }
+        });
+    </script>
+</body>
+</html>
+<!-- Add these two lines before closing </body> -->
     <script src="sounds.js"></script>
     <script src="assistant.js"></script>
 </body>
