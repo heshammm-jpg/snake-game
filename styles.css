@@ -1,3 +1,44 @@
+/* Sound Button */
+.sound-btn {
+    background: var(--glass);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-left: 10px;
+}
+
+.sound-btn:hover {
+    background: var(--primary);
+    transform: scale(1.1);
+}
+
+/* Assistant Tips Animation */
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.assistant-avatar {
+    font-size: 1.5rem;
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+/* Mobile sound button adjustment */
+.mobile-header .sound-btn {
+    width: 35px;
+    height: 35px;
+    font-size: 1rem;
+    margin-left: 5px;
+}
 :root {
     --primary: #00ff88;    /* Snake color */
     --secondary: #00ccff;  /* UI accents */
