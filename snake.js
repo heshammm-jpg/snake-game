@@ -1,15 +1,5 @@
-// Global init function
-function initGame(mode) {
-    window.game = new SnakeGame(mode);
-    console.log('Game created in mode:', mode);
-}
-console.log('snake.js is running');
-activatePowerUp() {
-    const powerUps = ['shield', 'speed', 'yourNewPower'];
-    // Add logic for new power-up
-}
-this.gridSize = 20;  // Pixel size of each tile
-this.tileCount = this.canvas.width / this.gridSize;
+console.log('snake.js loading...');
+
 class SnakeGame {
     constructor(mode) {
         this.mode = mode;
@@ -31,13 +21,11 @@ class SnakeGame {
         this.isRunning = false;
         this.isPaused = false;
         
-        // Power-ups
         this.shield = false;
         this.speedBoost = false;
         this.shieldTimer = 0;
         this.speedTimer = 0;
         
-        // Particles
         this.particles = [];
         
         this.init();
@@ -50,12 +38,10 @@ class SnakeGame {
     }
     
     setupEventListeners() {
-        // Keyboard controls (laptop)
         if (this.mode === 'laptop') {
             document.addEventListener('keydown', (e) => this.handleKey(e));
         }
         
-        // Button controls
         document.querySelectorAll('[data-dir]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -63,7 +49,6 @@ class SnakeGame {
                 this.setDirection(dir);
             });
             
-            // Touch events for mobile
             btn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 const dir = btn.getAttribute('data-dir');
@@ -71,11 +56,16 @@ class SnakeGame {
             });
         });
         
-        // Start/Pause buttons
-        document.getElementById('startBtn').addEventListener('click', () => this.start());
-        document.getElementById('pauseBtn').addEventListener('click', () => this.togglePause());
+        const startBtn = document.getElementById('startBtn');
+        if (startBtn) {
+            startBtn.addEventListener('click', () => this.start());
+        }
         
-        // Difficulty selection
+        const pauseBtn = document.getElementById('pauseBtn');
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', () => this.togglePause());
+        }
+        
         document.querySelectorAll('.diff-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
@@ -84,7 +74,6 @@ class SnakeGame {
             });
         });
         
-        // Swipe controls (mobile)
         if (this.mode === 'mobile') {
             let touchStartX = 0;
             let touchStartY = 0;
@@ -141,7 +130,7 @@ class SnakeGame {
         
         const newDir = dirs[dir];
         if (this.direction.x === -newDir.x && this.direction.y === -newDir.y) {
-            return; // Prevent 180-degree turns
+            return;
         }
         this.nextDirection = newDir;
     }
@@ -165,10 +154,14 @@ class SnakeGame {
     }
     
     start() {
-        document.getElementById('gameOverlay').classList.remove('active');
+        const overlay = document.getElementById('gameOverlay');
+        if (overlay) overlay.classList.remove('active');
+        
         this.isRunning = true;
         this.isPaused = false;
         this.reset();
+        
+        if (this.gameLoop) clearInterval(this.gameLoop);
         this.gameLoop = setInterval(() => this.update(), this.gameSpeed);
     }
     
@@ -181,7 +174,7 @@ class SnakeGame {
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             this.ctx.fillStyle = '#fff';
-            this.ctx.font = '30px Orbitron';
+            this.ctx.font = '30px Arial';
             this.ctx.textAlign = 'center';
             this.ctx.fillText('PAUSED', this.canvas.width/2, this.canvas.height/2);
         } else {
@@ -199,13 +192,20 @@ class SnakeGame {
             document.getElementById('highScore').textContent = this.highScore;
         }
         
-        document.getElementById('overlayTitle').textContent = 'GAME OVER';
-        document.getElementById('overlayText').textContent = `Final Score: ${this.score}`;
-        document.getElementById('startBtn').textContent = 'TRY AGAIN';
-        document.getElementById('gameOverlay').classList.add('active');
+        const overlayTitle = document.getElementById('overlayTitle');
+        const overlayText = document.getElementById('overlayText');
+        const startBtn = document.getElementById('startBtn');
+        
+        if (overlayTitle) overlayTitle.textContent = 'GAME OVER';
+        if (overlayText) overlayText.textContent = 'Final Score: ' + this.score;
+        if (startBtn) startBtn.textContent = 'TRY AGAIN';
+        
+        const overlay = document.getElementById('gameOverlay');
+        if (overlay) overlay.classList.add('active');
     }
     
     spawnFood() {
+        let attempts = 0;
         do {
             this.food = {
                 x: Math.floor(Math.random() * this.tileCount),
@@ -213,18 +213,20 @@ class SnakeGame {
                 type: Math.random() > 0.8 ? 'bonus' : 'normal',
                 color: Math.random() > 0.8 ? '#ff00ff' : '#00ff88'
             };
-        } while (this.isSnakeAt(this.food.x, this.food.y));
+            attempts++;
+        } while (this.isSnakeAt(this.food.x, this.food.y) && attempts < 100);
         
-        // Spawn bonus food occasionally
         if (Math.random() > 0.9 && !this.bonusFood) {
             setTimeout(() => {
+                let attempts = 0;
                 do {
                     this.bonusFood = {
                         x: Math.floor(Math.random() * this.tileCount),
                         y: Math.floor(Math.random() * this.tileCount),
                         timer: 100
                     };
-                } while (this.isSnakeAt(this.bonusFood.x, this.bonusFood.y));
+                    attempts++;
+                } while (this.isSnakeAt(this.bonusFood.x, this.bonusFood.y) && attempts < 100);
             }, 5000);
         }
     }
@@ -241,7 +243,6 @@ class SnakeGame {
             y: this.snake[0].y + this.direction.y
         };
         
-        // Wall collision
         if (head.x < 0 || head.x >= this.tileCount || head.y < 0 || head.y >= this.tileCount) {
             if (this.shield) {
                 this.wrapAround(head);
@@ -251,7 +252,6 @@ class SnakeGame {
             }
         }
         
-        // Self collision
         if (this.isSnakeAt(head.x, head.y)) {
             if (!this.shield) {
                 this.gameOver();
@@ -261,7 +261,6 @@ class SnakeGame {
         
         this.snake.unshift(head);
         
-        // Check food collision
         if (head.x === this.food.x && head.y === this.food.y) {
             this.eatFood(this.food);
         } else if (this.bonusFood && head.x === this.bonusFood.x && head.y === this.bonusFood.y) {
@@ -270,13 +269,11 @@ class SnakeGame {
             this.snake.pop();
         }
         
-        // Update bonus food timer
         if (this.bonusFood) {
             this.bonusFood.timer--;
             if (this.bonusFood.timer <= 0) this.bonusFood = null;
         }
         
-        // Update power-ups
         if (this.shield) {
             this.shieldTimer--;
             if (this.shieldTimer <= 0) this.shield = false;
@@ -290,7 +287,6 @@ class SnakeGame {
             }
         }
         
-        // Update particles
         this.particles = this.particles.filter(p => {
             p.life--;
             p.x += p.vx;
@@ -312,15 +308,12 @@ class SnakeGame {
         const points = food.type === 'bonus' ? 50 : 10;
         this.score += points;
         
-        // Create particles
         this.createParticles(food.x, food.y, food.color);
         
-        // Random power-up chance
         if (Math.random() > 0.85) {
             this.activatePowerUp();
         }
         
-        // Level up every 50 points
         const newLevel = Math.floor(this.score / 50) + 1;
         if (newLevel > this.level) {
             this.level = newLevel;
@@ -373,74 +366,27 @@ class SnakeGame {
     }
     
     updateScore() {
-        document.getElementById('score').textContent = this.score;
-        document.getElementById('level').textContent = this.level;
+        const scoreEl = document.getElementById('score');
+        const levelEl = document.getElementById('level');
         
-        // Update power indicator
-        if (this.mode === 'mobile') {
-            const indicator = document.getElementById('powerUpIndicator');
-            if (this.shield) {
-                indicator.style.width = '100%';
-                indicator.style.background = '#00ccff';
-            } else if (this.speedBoost) {
-                indicator.style.width = '100%';
-                indicator.style.background = '#ff00ff';
-            } else {
-                indicator.style.width = '0%';
-            }
-        }
+        if (scoreEl) scoreEl.textContent = this.score;
+        if (levelEl) levelEl.textContent = this.level;
     }
     
     draw() {
-        // Clear canvas
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        this.ctx.fillStyle = '#0a0a0f';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Draw grid (optional, subtle)
-        this.ctx.strokeStyle = 'rgba(0, 255, 136, 0.05)';
-        this.ctx.lineWidth = 0.5;
-        for (let i = 0; i < this.tileCount; i++) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(i * this.gridSize, 0);
-            this.ctx.lineTo(i * this.gridSize, this.canvas.height);
-            this.ctx.stroke();
-            this.ctx.beginPath();
-            this.ctx.moveTo(0, i * this.gridSize);
-            this.ctx.lineTo(this.canvas.width, i * this.gridSize);
-            this.ctx.stroke();
-        }
-        
-        // Draw snake
         this.snake.forEach((segment, index) => {
             const x = segment.x * this.gridSize;
             const y = segment.y * this.gridSize;
             
-            // Gradient effect
-            const gradient = this.ctx.createLinearGradient(x, y, x + this.gridSize, y + this.gridSize);
-            if (index === 0) {
-                gradient.addColorStop(0, '#00ff88');
-                gradient.addColorStop(1, '#00cc66');
-            } else {
-                const intensity = 1 - (index / this.snake.length) * 0.5;
-                gradient.addColorStop(0, `rgba(0, 255, 136, ${intensity})`);
-                gradient.addColorStop(1, `rgba(0, 204, 102, ${intensity})`);
-            }
+            this.ctx.fillStyle = index === 0 ? '#00ff88' : '#00cc66';
+            this.ctx.fillRect(x + 1, y + 1, this.gridSize - 2, this.gridSize - 2);
             
-            this.ctx.fillStyle = gradient;
-            this.ctx.shadowBlur = index === 0 ? 15 : 0;
-            this.ctx.shadowColor = '#00ff88';
-            
-            // Rounded rectangles for snake
-            const padding = 1;
-            this.ctx.beginPath();
-            this.ctx.roundRect(x + padding, y + padding, this.gridSize - padding*2, this.gridSize - padding*2, 5);
-            this.ctx.fill();
-            
-            // Eyes for head
             if (index === 0) {
                 this.ctx.fillStyle = '#000';
                 const eyeSize = 3;
-                const eyeOffset = 5;
                 if (this.direction.x === 1) {
                     this.ctx.fillRect(x + 12, y + 5, eyeSize, eyeSize);
                     this.ctx.fillRect(x + 12, y + 12, eyeSize, eyeSize);
@@ -457,42 +403,24 @@ class SnakeGame {
             }
         });
         
-        this.ctx.shadowBlur = 0;
-        
-        // Draw food
         const foodX = this.food.x * this.gridSize + this.gridSize/2;
         const foodY = this.food.y * this.gridSize + this.gridSize/2;
         
         this.ctx.fillStyle = this.food.color;
-        this.ctx.shadowBlur = 20;
-        this.ctx.shadowColor = this.food.color;
         this.ctx.beginPath();
         this.ctx.arc(foodX, foodY, 8, 0, Math.PI * 2);
         this.ctx.fill();
-        this.ctx.shadowBlur = 0;
         
-        // Draw bonus food
         if (this.bonusFood) {
             const bonusX = this.bonusFood.x * this.gridSize + this.gridSize/2;
             const bonusY = this.bonusFood.y * this.gridSize + this.gridSize/2;
             
             this.ctx.fillStyle = '#FFD700';
-            this.ctx.shadowBlur = 25;
-            this.ctx.shadowColor = '#FFD700';
             this.ctx.beginPath();
             this.ctx.arc(bonusX, bonusY, 10, 0, Math.PI * 2);
             this.ctx.fill();
-            
-            // Timer ring
-            this.ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
-            this.ctx.lineWidth = 3;
-            this.ctx.beginPath();
-            this.ctx.arc(bonusX, bonusY, 12, 0, (this.bonusFood.timer / 100) * Math.PI * 2);
-            this.ctx.stroke();
-            this.ctx.shadowBlur = 0;
         }
         
-        // Draw particles
         this.particles.forEach(p => {
             this.ctx.fillStyle = p.color;
             this.ctx.globalAlpha = p.life / 20;
@@ -500,19 +428,17 @@ class SnakeGame {
         });
         this.ctx.globalAlpha = 1;
         
-        // Draw shield indicator
         if (this.shield) {
             this.ctx.strokeStyle = '#00ccff';
             this.ctx.lineWidth = 3;
-            this.ctx.shadowBlur = 10;
-            this.ctx.shadowColor = '#00ccff';
             this.ctx.strokeRect(0, 0, this.canvas.width, this.canvas.height);
-            this.ctx.shadowBlur = 0;
         }
     }
 }
 
-// Global init function
 function initGame(mode) {
+    console.log('Initializing game in mode:', mode);
     window.game = new SnakeGame(mode);
 }
+
+console.log('snake.js loaded successfully');
