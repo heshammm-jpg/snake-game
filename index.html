@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Snake Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: #111;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        #gameCanvas {
+            border: 3px solid #0f0;
+            background: #000;
+            box-shadow: 0 0 20px #0f0;
+        }
+        
+        .ui {
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .score-board {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #0f0;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #0c0;
+        }
+        
+        #muteBtn {
+            background: #333;
+            color: #fff;
+            padding: 5px 10px;
+            font-size: 20px;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            gap: 5px;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            width: 60px;
+            height: 60px;
+            background: #222;
+            border: 2px solid #0f0;
+            color: #0f0;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 10px;
+            user-select: none;
+        }
+        
+        .btn:active {
+            background: #0f0;
+            color: #000;
+        }
+        
+        #up { grid-column: 2; }
+        #left { grid-column: 1; grid-row: 2; }
+        #pause { grid-column: 2; grid-row: 2; font-size: 20px; }
+        #right { grid-column: 3; grid-row: 2; }
+        #down { grid-column: 2; grid-row: 3; }
+        
+        .menu {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            border: 2px solid #0f0;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (min-width: 768px) {
+            .controls {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    
+    <div class="ui">
+        <div class="score-board">
+            <span>Score: <span id="score">0</span></span>
+            <span>Best: <span id="highScore">0</span></span>
+            <button id="muteBtn" onclick="toggleSound()">🔊</button>
+        </div>
+        
+        <button id="startBtn" onclick="startGame()">START GAME</button>
+    </div>
+    
+    <div class="controls">
+        <div class="btn" id="up" onclick="setDirection('up')">▲</div>
+        <div class="btn" id="left" onclick="setDirection('left')">◀</div>
+        <div class="btn" id="pause" onclick="pauseGame()">⏸</div>
+        <div class="btn" id="right" onclick="setDirection('right')">▶</div>
+        <div class="btn" id="down" onclick="setDirection('down')">▼</div>
+    </div>
+    
+    <div id="menu" class="menu hidden">
+        <h2 id="menuTitle">GAME OVER</h2>
+        <p id="menuText">Score: 0</p>
+        <button onclick="startGame()">PLAY AGAIN</button>
+    </div>
+
+    <script>
+        // Audio Engine (Synthesized - no external files)
+        const AudioEngine = {
+            ctx: null,
+            enabled: true,
+            
+            init() {
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                } catch(e) {
+                    console.log('Audio not supported');
+                    this.enabled = false;
+                }
+            },
+            
+            playTone(freq, duration, type = 'sine') {
+                if (!this.enabled || !this.ctx) return;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.frequency.value = freq;
+                osc.type = type;
+                
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                
+                osc.start(this.ctx.currentTime);
+                osc.stop(this.ctx.currentTime + duration);
+            },
+            
+            playEat() {
+                this.playTone(600, 0.1);
+                setTimeout(() => this.playTone(800, 0.1), 50);
+            },
+            
+            playGameOver() {
+                this.playTone(400, 0.3);
+                setTimeout(() => this.playTone(300, 0.3), 100);
+                setTimeout(() => this.playTone(200, 0.4), 200);
+            },
+            
+            playMove() {
+                if (Math.random() > 0.7) {
+                    this.playTone(200, 0.05, 'triangle');
+                }
+            }
+        };
+        
+        // Initialize audio on first user interaction
+        let audioInitialized = false;
+        function initAudio() {
+            if (!audioInitialized) {
+                AudioEngine.init();
+                audioInitialized = true;
+            }
+        }
+        
+        function toggleSound() {
+            AudioEngine.enabled = !AudioEngine.enabled;
+            document.getElementById('muteBtn').textContent = AudioEngine.enabled ? '🔊' : '🔇';
+        }
+        
+        // Canvas setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game variables
+        const gridSize = 20;
+        const tileCount = canvas.width / gridSize;
+        
+        let snake = [];
+        let food = {x: 0, y: 0};
+        let dx = 0;
+        let dy = 0;
+        let score = 0;
+        let highScore = localStorage.getItem('snakeHighScore') || 0;
+        let gameRunning = false;
+        let gamePaused = false;
+        let gameLoop = null;
+        
+        // Display high score
+        document.getElementById('highScore').textContent = highScore;
+        
+        // Initialize game
+        resetGame();
+        draw();
+        
+        // Keyboard controls
+        document.addEventListener('keydown', function(e) {
+            initAudio(); // Start audio context on first keypress
+            
+            if (!gameRunning || gamePaused) return;
+            
+            switch(e.key) {
+                case 'ArrowUp':
+                case 'w':
+                case 'W':
+                    if (dy !== 1) { dx = 0; dy = -1; }
+                    break;
+                case 'ArrowDown':
+                case 's':
+                case 'S':
+                    if (dy !== -1) { dx = 0; dy = 1; }
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                case 'A':
+                    if (dx !== 1) { dx = -1; dy = 0; }
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                case 'D':
+                    if (dx !== -1) { dx = 1; dy = 0; }
+                    break;
+                case ' ':
+                    pauseGame();
+                    break;
+            }
+            e.preventDefault();
+        });
+        
+        // Touch/Swipe controls
+        let touchStartX = 0;
+        let touchStartY = 0;
+        
+        canvas.addEventListener('touchstart', function(e) {
+            initAudio(); // Start audio context on touch
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, {passive: false});
+        
+        canvas.addEventListener('touchend', function(e) {
+            if (!gameRunning || gamePaused) return;
+            
+            let touchEndX = e.changedTouches[0].clientX;
+            let touchEndY = e.changedTouches[0].clientY;
+            
+            let dx = touchEndX - touchStartX;
+            let dy = touchEndY - touchStartY;
+            
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (dx > 0) setDirection('right');
+                else setDirection('left');
+            } else {
+                if (dy > 0) setDirection('down');
+                else setDirection('up');
+            }
+            e.preventDefault();
+        }, {passive: false});
+        
+        function setDirection(dir) {
+            initAudio(); // Start audio on button press
+            
+            if (!gameRunning || gamePaused) return;
+            
+            switch(dir) {
+                case 'up':
+                    if (dy !== 1) { dx = 0; dy = -1; }
+                    break;
+                case 'down':
+                    if (dy !== -1) { dx = 0; dy = 1; }
+                    break;
+                case 'left':
+                    if (dx !== 1) { dx = -1; dy = 0; }
+                    break;
+                case 'right':
+                    if (dx !== -1) { dx = 1; dy = 0; }
+                    break;
+            }
+        }
+        
+        function resetGame() {
+            snake = [
+                {x: 10, y: 10},
+                {x: 10, y: 11},
+                {x: 10, y: 12}
+            ];
+            dx = 0;
+            dy = -1;
+            score = 0;
+            document.getElementById('score').textContent = score;
+            spawnFood();
+            gameRunning = false;
+            gamePaused = false;
+        }
+        
+        function spawnFood() {
+            food.x = Math.floor(Math.random() * tileCount);
+            food.y = Math.floor(Math.random() * tileCount);
+            
+            for (let i = 0; i < snake.length; i++) {
+                if (snake[i].x === food.x && snake[i].y === food.y) {
+                    spawnFood();
+                    return;
+                }
+            }
+        }
+        
+        function startGame() {
+            initAudio();
+            document.getElementById('menu').classList.add('hidden');
+            document.getElementById('startBtn').classList.add('hidden');
+            resetGame();
+            gameRunning = true;
+            gameLoop = setInterval(update, 100);
+        }
+        
+        function pauseGame() {
+            if (!gameRunning) return;
+            
+            gamePaused = !gamePaused;
+            
+            if (gamePaused) {
+                clearInterval(gameLoop);
+                ctx.fillStyle = 'rgba(0,0,0,0.8)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#0f0';
+                ctx.font = '30px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('PAUSED', canvas.width/2, canvas.height/2);
+            } else {
+                gameLoop = setInterval(update, 100);
+            }
+        }
+        
+        function update() {
+            if (!gameRunning || gamePaused) return;
+            
+            let headX = snake[0].x + dx;
+            let headY = snake[0].y + dy;
+            
+            // Check wall collision
+            if (headX < 0 || headX >= tileCount || headY < 0 || headY >= tileCount) {
+                AudioEngine.playGameOver();
+                gameOver();
+                return;
+            }
+            
+            // Check self collision
+            for (let i = 0; i < snake.length; i++) {
+                if (snake[i].x === headX && snake[i].y === headY) {
+                    AudioEngine.playGameOver();
+                    gameOver();
+                    return;
+                }
+            }
+            
+            snake.unshift({x: headX, y: headY});
+            
+            // Check food collision
+            if (headX === food.x && headY === food.y) {
+                AudioEngine.playEat();
+                score += 10;
+                document.getElementById('score').textContent = score;
+                spawnFood();
+            } else {
+                snake.pop();
+                AudioEngine.playMove();
+            }
+            
+            draw();
+        }
+        
+        function draw() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw snake
+            ctx.fillStyle = '#0f0';
+            for (let i = 0; i < snake.length; i++) {
+                ctx.fillRect(snake[i].x * gridSize, snake[i].y * gridSize, gridSize - 2, gridSize - 2);
+            }
+            
+            // Draw food
+            ctx.fillStyle = '#f00';
+            ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize - 2, gridSize - 2);
+        }
+        
+        function gameOver() {
+            clearInterval(gameLoop);
+            gameRunning = false;
+            
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('snakeHighScore', highScore);
+                document.getElementById('highScore').textContent = highScore;
+            }
+            
+            document.getElementById('menuTitle').textContent = 'GAME OVER';
+            document.getElementById('menuText').textContent = 'Score: ' + score + ' | High Score: ' + highScore;
+            document.getElementById('menu').classList.remove('hidden');
+            document.querySelector('#menu button').textContent = 'PLAY AGAIN';
+            document.getElementById('startBtn').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
